@@ -1,0 +1,1 @@
+ALTER TABLE `invitations` ADD `music_autoplay` integer DEFAULT false NOT NULL;

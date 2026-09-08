@@ -74,7 +74,7 @@ function readActiveParam(value: string | null) {
   return { error: "active harus berupa true, false, atau all." };
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authorization = authorizeAdmin(request);
   if ("response" in authorization) return authorization.response;
 
@@ -109,7 +109,7 @@ export function GET(request: NextRequest) {
       );
     }
     const queryBuilder = db.select().from(templates);
-    const rows = (
+    const rows = await (
       filters.length ? queryBuilder.where(and(...filters)) : queryBuilder
     )
       .orderBy(asc(templates.name))
@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
     isActive: isActive.value,
   };
   try {
-    const created = db.insert(templates).values(values).returning().get();
+    const created = await db.insert(templates).values(values).returning().get();
     return NextResponse.json(
       {
         data: serializeTemplate(created),

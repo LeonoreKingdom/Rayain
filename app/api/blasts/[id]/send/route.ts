@@ -13,13 +13,13 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const blastId = id.trim();
   if (!blastId) return Response.json({ error: "ID blast wajib diisi." }, { status: 400 });
 
-  const current = db.select().from(blasts).where(eq(blasts.id, blastId)).get();
+  const current = await db.select().from(blasts).where(eq(blasts.id, blastId)).get();
   if (!current) return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
   if (current.status === "cancelled") return Response.json({ error: "Blast yang dibatalkan tidak dapat dikirim." }, { status: 409 });
   if (current.status === "completed") return Response.json({ data: serializeBlast(current), message: "Blast sudah pernah dikirim." });
 
   try {
-    const result = processBlast(blastId);
+    const result = await processBlast(blastId);
     if (result.status === "not-found") return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
     if (result.status === "not-due") return Response.json({ error: "Blast terjadwal belum waktunya dikirim." }, { status: 409 });
     if (result.status === "skipped" && result.reason === "cancelled") return Response.json({ error: "Blast yang dibatalkan tidak dapat dikirim." }, { status: 409 });

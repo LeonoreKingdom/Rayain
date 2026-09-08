@@ -11,7 +11,7 @@ function isInvitationType(value: string | null): value is (typeof invitationType
   return value !== null && invitationTypes.includes(value as (typeof invitationTypes)[number]);
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const eventType = searchParams.get("eventType") ?? searchParams.get("category");
   const activeParam = searchParams.get("active");
@@ -32,7 +32,7 @@ export function GET(request: NextRequest) {
   try {
     const filters: SQL[] = [eq(templates.isActive, activeParam !== "false")];
     if (eventTypeFilter) filters.push(eq(templates.eventType, eventTypeFilter));
-    const rows = db
+    const rows = await db
       .select()
       .from(templates)
       .where(and(...filters))

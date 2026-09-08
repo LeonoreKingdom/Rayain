@@ -58,7 +58,7 @@ async function readTrack(params: RouteContext) {
   return {
     trackId,
     track: trackId
-      ? db.select().from(music).where(eq(music.id, trackId)).get()
+      ? await db.select().from(music).where(eq(music.id, trackId)).get()
       : undefined,
   };
 }
@@ -155,7 +155,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
 
   try {
-    const updated = db
+    const updated = await db
       .update(music)
       .set(updates)
       .where(eq(music.id, trackId))
@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     );
 
   try {
-    const deleted = db
+    const deleted = await db
       .delete(music)
       .where(eq(music.id, trackId))
       .returning({ id: music.id })

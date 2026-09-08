@@ -5,8 +5,8 @@ import { serializeUser } from "../../../../lib/users/serialize";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET(request: NextRequest) {
-  const authenticated = readAuthSession(request);
+export async function GET(request: NextRequest) {
+  const authenticated = await readAuthSession(request);
   if (!authenticated)
     return NextResponse.json(
       { error: "Sesi autentikasi diperlukan." },

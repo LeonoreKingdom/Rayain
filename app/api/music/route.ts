@@ -7,7 +7,7 @@ import { serializeMusic } from "../../../lib/music/serialize";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const activeParam = searchParams.get("active");
   const query = searchParams.get("q") ?? searchParams.get("search");
@@ -28,7 +28,7 @@ export function GET(request: NextRequest) {
     }
     if (normalizedMood) filters.push(like(music.mood, `%${normalizedMood}%`));
 
-    const rows = db
+    const rows = await db
       .select()
       .from(music)
       .where(and(...filters))

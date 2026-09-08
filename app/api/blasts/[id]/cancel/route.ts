@@ -12,13 +12,13 @@ export async function POST(_request: Request, { params }: RouteContext) {
   const blastId = id.trim();
   if (!blastId) return Response.json({ error: "ID blast wajib diisi." }, { status: 400 });
 
-  const current = db.select().from(blasts).where(eq(blasts.id, blastId)).get();
+  const current = await db.select().from(blasts).where(eq(blasts.id, blastId)).get();
   if (!current) return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
   if (current.status === "cancelled") return Response.json({ data: serializeBlast(current), message: "Jadwal blast sudah dibatalkan." });
   if (current.status !== "scheduled") return Response.json({ error: "Hanya blast yang terjadwal yang dapat dibatalkan." }, { status: 409 });
 
   try {
-    const updated = db
+    const updated = await db
       .update(blasts)
       .set({ status: "cancelled", updatedAt: new Date() })
       .where(eq(blasts.id, blastId))

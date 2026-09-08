@@ -6,21 +6,21 @@ import { guests, invitations, rsvps } from "../../../../lib/db/schema";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function getInvitation(request: NextRequest) {
+async function getInvitation(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const invitationId = searchParams.get("invitationId")?.trim();
   const slug = (searchParams.get("slug") ?? searchParams.get("invitationSlug"))?.trim();
   if (!invitationId && !slug) return { error: "Kirim invitationId atau slug undangan." };
 
   const invitation = invitationId
-    ? db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get()
-    : db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug!)).get();
+    ? await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get()
+    : await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug!)).get();
   return invitation ? { invitation } : { error: "Undangan tidak ditemukan." };
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const result = getInvitation(request);
+    const result = await getInvitation(request);
     if ("error" in result) {
       return NextResponse.json(
         { error: result.error },
@@ -29,12 +29,12 @@ export function GET(request: NextRequest) {
     }
 
     const invitationId = result.invitation.id;
-    const invitedCount = db
+    const invitedCount = (await db
       .select({ count: count() })
       .from(guests)
       .where(eq(guests.invitationId, invitationId))
-      .get()?.count ?? 0;
-    const responses = db.select({ status: rsvps.status, partySize: rsvps.partySize }).from(rsvps).where(eq(rsvps.invitationId, invitationId)).all();
+      .get())?.count ?? 0;
+    const responses = await db.select({ status: rsvps.status, partySize: rsvps.partySize }).from(rsvps).where(eq(rsvps.invitationId, invitationId)).all();
 
     const counts = {
       attending: { responses: 0, guests: 0 },

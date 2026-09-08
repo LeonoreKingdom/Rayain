@@ -50,14 +50,14 @@ function addListFilters(request: NextRequest, filters: SQL[]) {
   return {};
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const scope = getScope(request.nextUrl.searchParams);
   if (!scope.filters.length) return NextResponse.json({ error: "Kirim invitationId atau userId untuk membaca notifikasi." }, { status: 400 });
   const listFilter = addListFilters(request, scope.filters);
   if (listFilter.error) return NextResponse.json({ error: listFilter.error }, { status: 400 });
 
   try {
-    const rows = db.select().from(notifications).where(and(...scope.filters)).orderBy(desc(notifications.createdAt)).all();
+    const rows = await db.select().from(notifications).where(and(...scope.filters)).orderBy(desc(notifications.createdAt)).all();
     return NextResponse.json({ data: rows.map(serializeNotification), count: rows.length, unreadCount: rows.filter((notification) => !notification.isRead).length });
   } catch (error) {
     console.error("Failed to list notifications", error);
@@ -82,8 +82,8 @@ export async function PATCH(request: NextRequest) {
   try {
     const now = new Date();
     const updates: Partial<NewNotification> = { isRead: readValue.value!, readAt: readValue.value! ? now : null };
-    const result = db.update(notifications).set(updates).where(and(...scope.filters)).run();
-    return NextResponse.json({ data: { updated: result.changes, isRead: readValue.value }, message: "Status notifikasi berhasil diperbarui." });
+    const result = await db.update(notifications).set(updates).where(and(...scope.filters)).run();
+    return NextResponse.json({ data: { updated: result.rowsAffected, isRead: readValue.value }, message: "Status notifikasi berhasil diperbarui." });
   } catch (error) {
     console.error("Failed to update notifications", error);
     return NextResponse.json({ error: "Status notifikasi belum bisa diperbarui." }, { status: 500 });

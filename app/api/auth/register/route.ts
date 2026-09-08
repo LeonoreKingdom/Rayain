@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const existing = db
+    const existing = await db
       .select({ id: users.id })
       .from(users)
       .where(eq(users.email, values.email))
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         { error: "Email sudah terdaftar." },
         { status: 409 },
       );
-    const created = db.insert(users).values(values).returning().get();
+    const created = await db.insert(users).values(values).returning().get();
     return NextResponse.json(
       { data: serializeUser(created), message: "Akun berhasil dibuat." },
       { status: 201 },

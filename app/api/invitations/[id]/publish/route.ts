@@ -20,10 +20,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   if (!invitationId) return NextResponse.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
   try {
-    const current = db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
+    const current = await db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
     if (!current) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
-    const updated = db
+    const updated = await db
       .update(invitations)
       .set({ status: "published", publishedAt: current.publishedAt ?? new Date(), updatedAt: new Date() })
       .where(eq(invitations.id, invitationId))

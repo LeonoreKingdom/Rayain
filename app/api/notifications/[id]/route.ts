@@ -37,7 +37,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   if (typeof isRead !== "boolean") return NextResponse.json({ error: "isRead harus berupa boolean atau action read/unread." }, { status: 400 });
 
   try {
-    const updated = db.update(notifications)
+    const updated = await db.update(notifications)
       .set({ isRead, readAt: isRead ? new Date() : null } satisfies Partial<NewNotification>)
       .where(eq(notifications.id, notificationId))
       .returning()

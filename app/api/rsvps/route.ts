@@ -81,7 +81,7 @@ function getDeadlineTimestamp(options: RsvpOptions) {
   return Number.isFinite(timestamp) ? timestamp : null;
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const invitationId = searchParams.get("invitationId")?.trim();
   const slug = (searchParams.get("slug") ?? searchParams.get("invitationSlug"))?.trim();
@@ -99,8 +99,8 @@ export function GET(request: NextRequest) {
 
   try {
     const invitation = invitationId
-      ? db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get()
-      : db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug!)).get();
+      ? await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get()
+      : await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.slug, slug!)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const filters: SQL[] = [eq(rsvps.invitationId, invitation.id)];
@@ -110,7 +110,7 @@ export function GET(request: NextRequest) {
     }
     if (status) filters.push(eq(rsvps.status, status));
 
-    const rows = db
+    const rows = await db
       .select()
       .from(rsvps)
       .where(and(...filters))
@@ -154,8 +154,8 @@ export async function POST(request: NextRequest) {
 
   try {
     const invitation = invitationId.value
-      ? db.select().from(invitations).where(eq(invitations.id, invitationId.value)).get()
-      : db.select().from(invitations).where(eq(invitations.slug, slug.value!)).get();
+      ? await db.select().from(invitations).where(eq(invitations.id, invitationId.value)).get()
+      : await db.select().from(invitations).where(eq(invitations.slug, slug.value!)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const options = parseRsvpOptions(invitation.rsvpOptions);
@@ -174,12 +174,12 @@ export async function POST(request: NextRequest) {
 
     let linkedGuest: Guest | undefined;
     if (guestId.value) {
-      linkedGuest = db.select().from(guests).where(eq(guests.id, guestId.value)).get();
+      linkedGuest = await db.select().from(guests).where(eq(guests.id, guestId.value)).get();
       if (!linkedGuest || linkedGuest.invitationId !== invitation.id) {
         return NextResponse.json({ error: "guestId tidak berasal dari undangan yang sama." }, { status: 400 });
       }
     } else if (phone.value) {
-      linkedGuest = db.select().from(guests).where(and(eq(guests.invitationId, invitation.id), eq(guests.phone, phone.value))).get();
+      linkedGuest = await db.select().from(guests).where(and(eq(guests.invitationId, invitation.id), eq(guests.phone, phone.value))).get();
     }
 
     const now = new Date();
@@ -197,9 +197,9 @@ export async function POST(request: NextRequest) {
       updatedAt: now,
     };
 
-    const result = db.transaction((tx) => {
-      const created = tx.insert(rsvps).values(values).returning().get();
-      tx.insert(notifications).values({
+    const result = await db.transaction(async (tx) => {
+      const created = await tx.insert(rsvps).values(values).returning().get();
+      await tx.insert(notifications).values({
         id: randomUUID(),
         userId: invitation.userId,
         invitationId: invitation.id,

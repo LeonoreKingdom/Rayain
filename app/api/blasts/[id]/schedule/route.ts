@@ -25,12 +25,12 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   const scheduledAt = new Date((body as { scheduledAt: string }).scheduledAt);
   if (Number.isNaN(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) return Response.json({ error: "scheduledAt harus berada di masa depan." }, { status: 400 });
 
-  const current = db.select().from(blasts).where(eq(blasts.id, blastId)).get();
+  const current = await db.select().from(blasts).where(eq(blasts.id, blastId)).get();
   if (!current) return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
   if (current.status === "completed" || current.status === "cancelled") return Response.json({ error: "Blast ini tidak dapat dijadwalkan ulang." }, { status: 409 });
 
   try {
-    const updated = db.update(blasts).set({ status: "scheduled", scheduledAt, startedAt: null, completedAt: null, updatedAt: new Date() }).where(eq(blasts.id, blastId)).returning().get();
+    const updated = await db.update(blasts).set({ status: "scheduled", scheduledAt, startedAt: null, completedAt: null, updatedAt: new Date() }).where(eq(blasts.id, blastId)).returning().get();
     if (!updated) return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
     return Response.json({ data: serializeBlast(updated as Blast), message: "Pesan berhasil dijadwalkan." });
   } catch (error) {

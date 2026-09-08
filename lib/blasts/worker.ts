@@ -12,8 +12,8 @@ export type BlastProcessResult =
  * Processes one blast through the local delivery adapter.
  * The adapter is intentionally deterministic until a WhatsApp provider is configured.
  */
-export function processBlast(blastId: string, now = new Date()): BlastProcessResult {
-  const current = db.select().from(blasts).where(eq(blasts.id, blastId)).get();
+export async function processBlast(blastId: string, now = new Date()): Promise<BlastProcessResult> {
+  const current = await db.select().from(blasts).where(eq(blasts.id, blastId)).get();
   if (!current) return { status: "not-found" };
   if (current.status === "completed") return { status: "skipped", blast: current, reason: "already-complete" };
   if (current.status === "cancelled") return { status: "skipped", blast: current, reason: "cancelled" };
@@ -21,23 +21,23 @@ export function processBlast(blastId: string, now = new Date()): BlastProcessRes
     return { status: "not-due", blast: current };
   }
 
-  const processed = db.transaction((tx) => {
-    tx.update(blasts)
+  const processed = await db.transaction(async (tx) => {
+    await tx.update(blasts)
       .set({ status: "sending", startedAt: current.startedAt ?? now, updatedAt: now })
       .where(eq(blasts.id, blastId))
       .run();
-    const queuedLogs = tx
+    const queuedLogs = await tx
       .select({ id: blastLogs.id })
       .from(blastLogs)
       .where(and(eq(blastLogs.blastId, blastId), eq(blastLogs.status, "queued")))
       .all();
     if (queuedLogs.length) {
-      tx.update(blastLogs)
+      await tx.update(blastLogs)
         .set({ status: "sent", sentAt: now, errorMessage: null })
         .where(and(eq(blastLogs.blastId, blastId), eq(blastLogs.status, "queued")))
         .run();
     }
-    return tx
+    return await tx
       .update(blasts)
       .set({
         status: "completed",
@@ -53,11 +53,11 @@ export function processBlast(blastId: string, now = new Date()): BlastProcessRes
   return { status: "processed", blast: processed ?? current, sentCount: processed?.sentCount ?? current.sentCount, mode: "mock" };
 }
 
-export function processDueBlasts(now = new Date()) {
-  const dueBlasts = db
+export async function processDueBlasts(now = new Date()) {
+  const dueBlasts = await db
     .select({ id: blasts.id })
     .from(blasts)
     .where(and(eq(blasts.status, "scheduled"), lte(blasts.scheduledAt, now)))
     .all();
-  return dueBlasts.map(({ id }) => processBlast(id, now));
+  return Promise.all(dueBlasts.map(({ id }) => processBlast(id, now)));
 }

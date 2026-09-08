@@ -61,13 +61,13 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
 
-  const resetToken = readValidPasswordResetToken(token);
+  const resetToken = await readValidPasswordResetToken(token);
   if (!resetToken)
     return NextResponse.json(
       { error: "Token reset tidak valid atau sudah kedaluwarsa." },
       { status: 400 },
     );
-  const user = db
+  const user = await db
     .select()
     .from(users)
     .where(eq(users.id, resetToken.userId))
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
   const now = new Date();
   const passwordHash = hashPassword(password);
   try {
-    const updated = db.transaction((tx) => {
-      const claimed = tx
+    const updated = await db.transaction(async (tx) => {
+      const claimed = await tx
         .update(resetTokens)
         .set({ usedAt: now })
         .where(
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
         .returning({ id: resetTokens.id })
         .get();
       if (!claimed) return null;
-      const updatedUser = tx
+      const updatedUser = await tx
         .update(users)
         .set({ passwordHash, updatedAt: now })
         .where(eq(users.id, user.id))
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
         .get();
       if (!updatedUser)
         throw new Error("User for password reset no longer exists");
-      tx.update(authSessions)
+      await tx.update(authSessions)
         .set({ revokedAt: now })
         .where(
           and(eq(authSessions.userId, user.id), isNull(authSessions.revokedAt)),

@@ -40,8 +40,8 @@ function readWhatsApp(value: unknown) {
     : { error: "Nomor WhatsApp maksimal 40 karakter." };
 }
 
-function getAuthenticated(request: NextRequest) {
-  const authenticated = readAuthSession(request);
+async function getAuthenticated(request: NextRequest) {
+  const authenticated = await readAuthSession(request);
   if (!authenticated)
     return {
       response: NextResponse.json(
@@ -59,14 +59,14 @@ function getAuthenticated(request: NextRequest) {
   return authenticated;
 }
 
-export function GET(request: NextRequest) {
-  const authenticated = getAuthenticated(request);
+export async function GET(request: NextRequest) {
+  const authenticated = await getAuthenticated(request);
   if ("response" in authenticated) return authenticated.response;
   return NextResponse.json({ data: serializeUser(authenticated.user) });
 }
 
 export async function PATCH(request: NextRequest) {
-  const authenticated = getAuthenticated(request);
+  const authenticated = await getAuthenticated(request);
   if ("response" in authenticated) return authenticated.response;
 
   let body: unknown;
@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest) {
 
   try {
     if (email.value) {
-      const existing = db
+      const existing = await db
         .select({ id: users.id })
         .from(users)
         .where(
@@ -131,7 +131,7 @@ export async function PATCH(request: NextRequest) {
           { status: 409 },
         );
     }
-    const updated = db
+    const updated = await db
       .update(users)
       .set(updates)
       .where(eq(users.id, authenticated.user.id))

@@ -48,7 +48,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   if (!invitationId) return NextResponse.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
   try {
-    const invitation = db.select({ id: invitations.id, rsvpOptions: invitations.rsvpOptions }).from(invitations).where(eq(invitations.id, invitationId)).get();
+    const invitation = await db.select({ id: invitations.id, rsvpOptions: invitations.rsvpOptions }).from(invitations).where(eq(invitations.id, invitationId)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     return NextResponse.json({ data: serializeOptions(invitation.id, invitation.rsvpOptions) });
   } catch (error) {
@@ -87,7 +87,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   try {
-    const current = db.select({ id: invitations.id, rsvpOptions: invitations.rsvpOptions }).from(invitations).where(eq(invitations.id, invitationId)).get();
+    const current = await db.select({ id: invitations.id, rsvpOptions: invitations.rsvpOptions }).from(invitations).where(eq(invitations.id, invitationId)).get();
     if (!current) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const nextOptions: RsvpOptions = {
@@ -101,7 +101,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
       ...(successMessage === undefined ? {} : { successMessage: successMessage.trim() }),
     };
 
-    const updated = db.update(invitations)
+    const updated = await db.update(invitations)
       .set({ rsvpOptions: JSON.stringify(nextOptions), updatedAt: new Date() } satisfies Partial<NewInvitation>)
       .where(eq(invitations.id, invitationId))
       .returning({ id: invitations.id, rsvpOptions: invitations.rsvpOptions })

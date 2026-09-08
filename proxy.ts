@@ -19,11 +19,11 @@ function isProtectedPath(pathname: string) {
   );
 }
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   if (!isProtectedPath(request.nextUrl.pathname)) return NextResponse.next();
 
   const demoSession = readDemoSession(request.cookies);
-  const authSession = readAuthSession(request);
+  const authSession = await readAuthSession(request);
   const isAuthenticated = demoSession.isAuthenticated || Boolean(authSession);
   const isAdmin = demoSession.isAdmin || authSession?.user.role === "admin";
   const isBlocked =

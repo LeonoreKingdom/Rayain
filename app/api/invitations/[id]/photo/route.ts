@@ -35,7 +35,7 @@ export async function POST(request: Request, { params }: RouteContext) {
   const invitationId = id.trim();
   if (!invitationId) return Response.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
-  const invitation = db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
+  const invitation = await db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
   if (!invitation) return Response.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
   let formData: FormData;
@@ -70,7 +70,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       photo: "custom",
       photoUrl: publicPath,
     };
-    const updated = db
+    const updated = await db
       .update(invitations)
       .set({ photo: "custom", designData: JSON.stringify(designData), updatedAt: new Date() })
       .where(eq(invitations.id, invitationId))

@@ -79,7 +79,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
   if (!invitationId) return NextResponse.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
   try {
-    const invitation = db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
+    const invitation = await db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     return NextResponse.json({ data: serializeInvitation(invitation, getOrigin(request)) });
   } catch (error) {
@@ -93,7 +93,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   const invitationId = id.trim();
   if (!invitationId) return NextResponse.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
-  const current = db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
+  const current = await db.select().from(invitations).where(eq(invitations.id, invitationId)).get();
   if (!current) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
   let body: unknown;
@@ -130,7 +130,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
     return NextResponse.json({ error: `eventType harus salah satu dari: ${invitationTypes.join(", ")}.` }, { status: 400 });
   }
   if (musicId.value) {
-    const selectedMusic = db
+    const selectedMusic = await db
       .select({ id: music.id })
       .from(music)
       .where(and(eq(music.id, musicId.value), eq(music.isActive, true)))
@@ -197,7 +197,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 
   try {
-    const updated = db.update(invitations).set(updates).where(eq(invitations.id, invitationId)).returning().get();
+    const updated = await db.update(invitations).set(updates).where(eq(invitations.id, invitationId)).returning().get();
     if (!updated) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     return NextResponse.json({ data: serializeInvitation(updated as Invitation, request.url ? new URL(request.url).origin : "http://localhost:3000") });
   } catch (error) {
@@ -206,18 +206,17 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   }
 }
 
-export function DELETE(_request: Request, { params }: RouteContext) {
-  return params.then(({ id }) => {
-    const invitationId = id.trim();
-    if (!invitationId) return Response.json({ error: "ID undangan wajib diisi." }, { status: 400 });
+export async function DELETE(_request: Request, { params }: RouteContext) {
+  const { id } = await params;
+  const invitationId = id.trim();
+  if (!invitationId) return Response.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
-    try {
-      const deleted = db.delete(invitations).where(eq(invitations.id, invitationId)).returning({ id: invitations.id }).get();
-      if (!deleted) return Response.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
-      return Response.json({ data: deleted, message: "Undangan berhasil dihapus." });
-    } catch (error) {
-      console.error("Failed to delete invitation", error);
-      return Response.json({ error: "Undangan belum bisa dihapus." }, { status: 500 });
-    }
-  });
+  try {
+    const deleted = await db.delete(invitations).where(eq(invitations.id, invitationId)).returning({ id: invitations.id }).get();
+    if (!deleted) return Response.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
+    return Response.json({ data: deleted, message: "Undangan berhasil dihapus." });
+  } catch (error) {
+    console.error("Failed to delete invitation", error);
+    return Response.json({ error: "Undangan belum bisa dihapus." }, { status: 500 });
+  }
 }

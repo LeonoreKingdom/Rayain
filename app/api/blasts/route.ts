@@ -36,14 +36,14 @@ function readGuestIds(value: unknown) {
   return { value: ids };
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const invitationId = request.nextUrl.searchParams.get("invitationId")?.trim();
   if (!invitationId) return NextResponse.json({ error: "invitationId wajib diisi." }, { status: 400 });
 
   try {
-    const invitation = db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get();
+    const invitation = await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
-    const rows = db.select().from(blasts).where(eq(blasts.invitationId, invitationId)).orderBy(desc(blasts.createdAt)).all();
+    const rows = await db.select().from(blasts).where(eq(blasts.invitationId, invitationId)).orderBy(desc(blasts.createdAt)).all();
     return NextResponse.json({ data: rows.map(serializeBlast), count: rows.length });
   } catch (error) {
     console.error("Failed to list blasts", error);
@@ -71,12 +71,12 @@ export async function POST(request: NextRequest) {
   if (message.value && message.value.length > 4096) return NextResponse.json({ error: "message maksimal 4096 karakter." }, { status: 400 });
 
   try {
-    const invitation = db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId.value!)).get();
+    const invitation = await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId.value!)).get();
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const guestFilters: SQL[] = [eq(guests.invitationId, invitationId.value!)];
     if (guestIds.value) guestFilters.push(inArray(guests.id, guestIds.value));
-    const recipients = db.select().from(guests).where(and(...guestFilters)).orderBy(asc(guests.name)).all();
+    const recipients = await db.select().from(guests).where(and(...guestFilters)).orderBy(asc(guests.name)).all();
     if (guestIds.value && recipients.length !== guestIds.value.length) return NextResponse.json({ error: "Semua guestIds harus berasal dari undangan yang sama." }, { status: 400 });
     if (!recipients.length) return NextResponse.json({ error: "Minimal satu tamu diperlukan untuk pengiriman." }, { status: 400 });
 
@@ -97,8 +97,8 @@ export async function POST(request: NextRequest) {
       createdAt: now,
       updatedAt: now,
     };
-    const created = db.transaction((tx) => {
-      const blast = tx.insert(blasts).values(blastValues).returning().get();
+    const created = await db.transaction(async (tx) => {
+      const blast = await tx.insert(blasts).values(blastValues).returning().get();
       const logs: NewBlastLog[] = recipients.map((guest) => ({
         id: randomUUID(),
         blastId: blast.id,
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
         sentAt: isScheduled ? null : now,
         createdAt: now,
       }));
-      tx.insert(blastLogs).values(logs).run();
+      await tx.insert(blastLogs).values(logs).run();
       return blast;
     });
 

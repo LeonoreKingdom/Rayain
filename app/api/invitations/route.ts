@@ -40,7 +40,7 @@ function slugify(value: string) {
     .slice(0, 54) || "undangan-baru";
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const status = searchParams.get("status");
   const query = searchParams.get("q")?.trim();
@@ -67,7 +67,7 @@ export function GET(request: NextRequest) {
       if (searchFilter) filters.push(searchFilter);
     }
 
-    const rows = (filters.length > 0
+    const rows = await (filters.length > 0
       ? db.select().from(invitations).where(and(...filters))
       : db.select().from(invitations)
     ).orderBy(desc(invitations.updatedAt)).all();
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const created = db.insert(invitations).values(values).returning().get();
+    const created = await db.insert(invitations).values(values).returning().get();
     return NextResponse.json(
       { data: serializeInvitation(created, getOrigin(request)) },
       { status: 201 },

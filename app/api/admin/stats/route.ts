@@ -10,15 +10,15 @@ export const dynamic = "force-dynamic";
 const supportedPeriods = { "7d": 7, "30d": 30, "90d": 90 } as const;
 type StatsPeriod = keyof typeof supportedPeriods;
 
-function countRows(table: typeof users | typeof invitations | typeof guests | typeof rsvps | typeof blasts | typeof music | typeof content) {
-  return db.select({ count: count() }).from(table).get()?.count ?? 0;
+async function countRows(table: typeof users | typeof invitations | typeof guests | typeof rsvps | typeof blasts | typeof music | typeof content) {
+  return (await db.select({ count: count() }).from(table).get())?.count ?? 0;
 }
 
 function dateKey(value: Date) {
   return value.toISOString().slice(0, 10);
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const session = readDemoSession(request.cookies);
   if (!session.isAuthenticated) return NextResponse.json({ error: "Sesi admin diperlukan." }, { status: 401 });
   if (session.isBlocked) return NextResponse.json({ error: "Akun pengguna sedang diblokir." }, { status: 403 });
@@ -36,21 +36,21 @@ export function GET(request: NextRequest) {
 
   try {
     const userStatus = {
-      active: db.select({ count: count() }).from(users).where(eq(users.status, "active")).get()?.count ?? 0,
-      blocked: db.select({ count: count() }).from(users).where(eq(users.status, "blocked")).get()?.count ?? 0,
-      invited: db.select({ count: count() }).from(users).where(eq(users.status, "invited")).get()?.count ?? 0,
+      active: (await db.select({ count: count() }).from(users).where(eq(users.status, "active")).get())?.count ?? 0,
+      blocked: (await db.select({ count: count() }).from(users).where(eq(users.status, "blocked")).get())?.count ?? 0,
+      invited: (await db.select({ count: count() }).from(users).where(eq(users.status, "invited")).get())?.count ?? 0,
     };
     const invitationStatus = {
-      published: db.select({ count: count() }).from(invitations).where(eq(invitations.status, "published")).get()?.count ?? 0,
-      draft: db.select({ count: count() }).from(invitations).where(eq(invitations.status, "draft")).get()?.count ?? 0,
+      published: (await db.select({ count: count() }).from(invitations).where(eq(invitations.status, "published")).get())?.count ?? 0,
+      draft: (await db.select({ count: count() }).from(invitations).where(eq(invitations.status, "draft")).get())?.count ?? 0,
     };
-    const rsvpRows = db.select({ status: rsvps.status, partySize: rsvps.partySize }).from(rsvps).all();
+    const rsvpRows = await db.select({ status: rsvps.status, partySize: rsvps.partySize }).from(rsvps).all();
     const rsvpStatus = { attending: 0, declined: 0, maybe: 0 };
     const attendingGuests = rsvpRows.reduce((total, row) => {
       rsvpStatus[row.status] += 1;
       return total + (row.status === "attending" ? Math.max(0, row.partySize) : 0);
     }, 0);
-    const blastRows = db.select({ status: blasts.status }).from(blasts).all();
+    const blastRows = await db.select({ status: blasts.status }).from(blasts).all();
     const blastStatus = blastRows.reduce<Record<string, number>>((result, row) => {
       result[row.status] = (result[row.status] ?? 0) + 1;
       return result;
@@ -60,8 +60,8 @@ export function GET(request: NextRequest) {
       const date = new Date(now.getTime() - index * 24 * 60 * 60 * 1000);
       activityByDate.set(dateKey(date), { invitations: 0, rsvps: 0 });
     }
-    const recentInvitations = db.select({ createdAt: invitations.createdAt }).from(invitations).where(gte(invitations.createdAt, from)).all();
-    const recentRsvps = db.select({ createdAt: rsvps.createdAt }).from(rsvps).where(gte(rsvps.createdAt, from)).all();
+    const recentInvitations = await db.select({ createdAt: invitations.createdAt }).from(invitations).where(gte(invitations.createdAt, from)).all();
+    const recentRsvps = await db.select({ createdAt: rsvps.createdAt }).from(rsvps).where(gte(rsvps.createdAt, from)).all();
     for (const row of recentInvitations) {
       const bucket = activityByDate.get(dateKey(row.createdAt));
       if (bucket) bucket.invitations += 1;
@@ -75,19 +75,19 @@ export function GET(request: NextRequest) {
       data: {
         period: { key: period, days, from: from.toISOString(), to: now.toISOString() },
         totals: {
-          users: countRows(users),
+          users: await countRows(users),
           activeUsers: userStatus.active,
           blockedUsers: userStatus.blocked,
           invitedUsers: userStatus.invited,
-          invitations: countRows(invitations),
+          invitations: await countRows(invitations),
           activeInvitations: invitationStatus.published,
           draftInvitations: invitationStatus.draft,
-          guests: countRows(guests),
+          guests: await countRows(guests),
           rsvps: rsvpRows.length,
           attendingGuests,
-          musicTracks: countRows(music),
-          activeMusicTracks: db.select({ count: count() }).from(music).where(eq(music.isActive, true)).get()?.count ?? 0,
-          contentItems: countRows(content),
+          musicTracks: await countRows(music),
+          activeMusicTracks: (await db.select({ count: count() }).from(music).where(eq(music.isActive, true)).get())?.count ?? 0,
+          contentItems: await countRows(content),
         },
         status: { users: userStatus, invitations: invitationStatus, rsvps: rsvpStatus, blasts: blastStatus },
         activity: Array.from(activityByDate, ([date, values]) => ({ date, ...values })),

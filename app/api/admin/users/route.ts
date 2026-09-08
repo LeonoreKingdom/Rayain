@@ -36,7 +36,7 @@ function readEmail(value: unknown) {
   return { value: email };
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authorization = authorizeAdmin(request);
   if ("response" in authorization) return authorization.response;
 
@@ -58,7 +58,7 @@ export function GET(request: NextRequest) {
       filters.push(or(like(users.name, pattern), like(users.email, pattern))!);
     }
     const queryBuilder = db.select().from(users);
-    const rows = (filters.length ? queryBuilder.where(and(...filters)) : queryBuilder).orderBy(asc(users.name)).all();
+    const rows = await (filters.length ? queryBuilder.where(and(...filters)) : queryBuilder).orderBy(asc(users.name)).all();
     return NextResponse.json({ data: rows.map((user: User) => serializeUser(user)), count: rows.length });
   } catch (error) {
     console.error("Failed to list admin users", error);
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 
   const values: NewUser = { id: randomUUID(), name: name.value, email: email.value, role, status };
   try {
-    const created = db.insert(users).values(values).returning().get();
+    const created = await db.insert(users).values(values).returning().get();
     return NextResponse.json({ data: serializeUser(created), message: "Pengguna berhasil ditambahkan." }, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) return NextResponse.json({ error: "Email pengguna sudah terdaftar." }, { status: 409 });

@@ -30,7 +30,7 @@ async function readGuest(params: RouteContext) {
   const { id } = await params.params;
   const guestId = id.trim();
   if (!guestId) return { guestId, guest: undefined };
-  return { guestId, guest: db.select().from(guests).where(eq(guests.id, guestId)).get() };
+  return { guestId, guest: await db.select().from(guests).where(eq(guests.id, guestId)).get() };
 }
 
 export async function GET(_request: NextRequest, { params }: RouteContext) {
@@ -72,7 +72,7 @@ export async function PATCH(request: Request, { params }: RouteContext) {
   if (Object.keys(updates).length === 1) return Response.json({ error: "Kirim minimal satu field untuk diperbarui." }, { status: 400 });
 
   try {
-    const updated = db.update(guests).set(updates).where(eq(guests.id, guestId)).returning().get();
+    const updated = await db.update(guests).set(updates).where(eq(guests.id, guestId)).returning().get();
     if (!updated) return Response.json({ error: "Tamu tidak ditemukan." }, { status: 404 });
     return Response.json({ data: serializeGuest(updated as Guest) });
   } catch (error) {
@@ -85,7 +85,7 @@ export async function DELETE(_request: Request, { params }: RouteContext) {
   const { guestId } = await readGuest({ params });
   if (!guestId) return Response.json({ error: "ID tamu wajib diisi." }, { status: 400 });
   try {
-    const deleted = db.delete(guests).where(eq(guests.id, guestId)).returning({ id: guests.id }).get();
+    const deleted = await db.delete(guests).where(eq(guests.id, guestId)).returning({ id: guests.id }).get();
     if (!deleted) return Response.json({ error: "Tamu tidak ditemukan." }, { status: 404 });
     return Response.json({ data: deleted, message: "Tamu berhasil dihapus." });
   } catch (error) {

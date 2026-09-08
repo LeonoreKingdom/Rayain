@@ -24,10 +24,10 @@ function readToken(request: Request) {
     : null;
 }
 
-export function createAuthSession(userId: string) {
+export async function createAuthSession(userId: string) {
   const token = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + authTokenMaxAge * 1000);
-  db.insert(authSessions)
+  await db.insert(authSessions)
     .values({
       id: randomUUID(),
       userId,
@@ -38,12 +38,12 @@ export function createAuthSession(userId: string) {
   return { token, expiresAt };
 }
 
-export function readAuthSession(
+export async function readAuthSession(
   request: Request,
-): { session: AuthSession; user: User } | null {
+): Promise<{ session: AuthSession; user: User } | null> {
   const token = readToken(request);
   if (!token) return null;
-  const session = db
+  const session = await db
     .select()
     .from(authSessions)
     .where(
@@ -55,7 +55,7 @@ export function readAuthSession(
     )
     .get();
   if (!session) return null;
-  const user = db
+  const user = await db
     .select()
     .from(users)
     .where(eq(users.id, session.userId))
@@ -63,10 +63,10 @@ export function readAuthSession(
   return user ? { session, user } : null;
 }
 
-export function revokeAuthSession(request: Request) {
+export async function revokeAuthSession(request: Request) {
   const token = readToken(request);
   if (!token) return;
-  db.update(authSessions)
+  await db.update(authSessions)
     .set({ revokedAt: new Date() })
     .where(
       and(

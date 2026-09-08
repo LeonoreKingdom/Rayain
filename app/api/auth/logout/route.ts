@@ -4,8 +4,8 @@ import { clearAuthCookie, revokeAuthSession } from "../../../../lib/auth/token";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export function POST(request: NextRequest) {
-  revokeAuthSession(request);
+export async function POST(request: NextRequest) {
+  await revokeAuthSession(request);
   const response = NextResponse.json({ message: "Sesi berhasil diakhiri." });
   clearAuthCookie(response);
   return response;

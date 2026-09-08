@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
 
-  const user = db
+  const user = await db
     .select({ id: users.id, status: users.status })
     .from(users)
     .where(eq(users.email, email))
     .get();
   if (user?.status === "active") {
-    createPasswordResetToken(user.id);
+    await createPasswordResetToken(user.id);
   }
 
   return NextResponse.json({

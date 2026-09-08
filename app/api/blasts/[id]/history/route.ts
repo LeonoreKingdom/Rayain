@@ -14,9 +14,9 @@ export async function GET(_request: Request, { params }: RouteContext) {
   if (!blastId) return Response.json({ error: "ID blast wajib diisi." }, { status: 400 });
 
   try {
-    const blast = db.select().from(blasts).where(eq(blasts.id, blastId)).get();
+    const blast = await db.select().from(blasts).where(eq(blasts.id, blastId)).get();
     if (!blast) return Response.json({ error: "Blast tidak ditemukan." }, { status: 404 });
-    const logs = db.select().from(blastLogs).where(eq(blastLogs.blastId, blastId)).orderBy(asc(blastLogs.createdAt)).all();
+    const logs = await db.select().from(blastLogs).where(eq(blastLogs.blastId, blastId)).orderBy(asc(blastLogs.createdAt)).all();
     const summary = logs.reduce(
       (result, log) => {
         result[log.status] += 1;

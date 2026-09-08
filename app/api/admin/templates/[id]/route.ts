@@ -80,7 +80,7 @@ async function readTemplate(params: RouteContext) {
   return {
     templateId,
     template: templateId
-      ? db.select().from(templates).where(eq(templates.id, templateId)).get()
+      ? await db.select().from(templates).where(eq(templates.id, templateId)).get()
       : undefined,
   };
 }
@@ -174,7 +174,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     );
 
   try {
-    const updated = db
+    const updated = await db
       .update(templates)
       .set(updates)
       .where(eq(templates.id, templateId))
@@ -209,7 +209,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     );
 
   try {
-    const deleted = db
+    const deleted = await db
       .delete(templates)
       .where(eq(templates.id, templateId))
       .returning({ id: templates.id })

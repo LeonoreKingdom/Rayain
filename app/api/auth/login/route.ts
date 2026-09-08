@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
 
-  const user = db.select().from(users).where(eq(users.email, email)).get();
+  const user = await db.select().from(users).where(eq(users.email, email)).get();
   if (!user || !verifyPassword(password, user.passwordHash))
     return NextResponse.json(
       { error: "Email atau kata sandi salah." },
@@ -66,11 +66,11 @@ export async function POST(request: NextRequest) {
     );
 
   const now = new Date();
-  db.update(users)
+  await db.update(users)
     .set({ lastLoginAt: now, updatedAt: now })
     .where(eq(users.id, user.id))
     .run();
-  const session = createAuthSession(user.id);
+  const session = await createAuthSession(user.id);
   const response = NextResponse.json({
     data: serializeUser({ ...user, lastLoginAt: now, updatedAt: now }),
     token: session.token,

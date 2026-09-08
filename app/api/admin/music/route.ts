@@ -53,7 +53,7 @@ function readActiveParam(value: string | null) {
   return { error: "active harus berupa true, false, atau all." };
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authorization = authorizeAdmin(request);
   if ("response" in authorization) return authorization.response;
 
@@ -83,7 +83,7 @@ export function GET(request: NextRequest) {
     }
     if (mood) filters.push(like(music.mood, `%${mood}%`));
     const queryBuilder = db.select().from(music);
-    const rows = (
+    const rows = await (
       filters.length ? queryBuilder.where(and(...filters)) : queryBuilder
     )
       .orderBy(asc(music.title))
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     isActive: isActive.value,
   };
   try {
-    const created = db.insert(music).values(values).returning().get();
+    const created = await db.insert(music).values(values).returning().get();
     return NextResponse.json(
       { data: serializeMusic(created), message: "Musik berhasil ditambahkan." },
       { status: 201 },

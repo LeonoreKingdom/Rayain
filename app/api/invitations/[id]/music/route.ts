@@ -17,7 +17,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
   if (!invitationId) return NextResponse.json({ error: "ID undangan wajib diisi." }, { status: 400 });
 
   try {
-    const invitation = db
+    const invitation = await db
       .select({ id: invitations.id, musicId: invitations.musicId, musicAutoplay: invitations.musicAutoplay })
       .from(invitations)
       .where(eq(invitations.id, invitationId))
@@ -25,7 +25,7 @@ export async function GET(_request: Request, { params }: RouteContext) {
     if (!invitation) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const track = invitation.musicId
-      ? db
+      ? await db
         .select()
         .from(music)
         .where(and(eq(music.id, invitation.musicId), eq(music.isActive, true)))

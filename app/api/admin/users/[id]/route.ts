@@ -29,7 +29,7 @@ function readEmail(value: unknown) {
 }
 
 async function findUser(id: string) {
-  return db.select().from(users).where(eq(users.id, id)).get() as User | undefined;
+  return await db.select().from(users).where(eq(users.id, id)).get() as User | undefined;
 }
 
 export async function GET(request: NextRequest, { params }: RouteContext) {
@@ -83,7 +83,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (Object.keys(updates).length === 1) return NextResponse.json({ error: "Kirim minimal satu field name, email, role, atau status." }, { status: 400 });
 
   try {
-    const updated = db.update(users).set(updates).where(eq(users.id, id)).returning().get();
+    const updated = await db.update(users).set(updates).where(eq(users.id, id)).returning().get();
     return updated ? NextResponse.json({ data: serializeUser(updated), message: "Pengguna berhasil diperbarui." }) : NextResponse.json({ error: "Pengguna tidak ditemukan." }, { status: 404 });
   } catch (error) {
     if (error instanceof Error && error.message.toLowerCase().includes("unique")) return NextResponse.json({ error: "Email pengguna sudah terdaftar." }, { status: 409 });

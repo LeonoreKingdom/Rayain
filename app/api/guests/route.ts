@@ -23,11 +23,11 @@ function readNullableText(value: unknown, fieldName: string) {
   return { value: value.trim() || null };
 }
 
-function findInvitation(invitationId: string) {
-  return db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get();
+async function findInvitation(invitationId: string) {
+  return await db.select({ id: invitations.id }).from(invitations).where(eq(invitations.id, invitationId)).get();
 }
 
-export function GET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const invitationId = searchParams.get("invitationId")?.trim();
   const query = (searchParams.get("q") ?? searchParams.get("search"))?.trim();
@@ -36,7 +36,7 @@ export function GET(request: NextRequest) {
   if (!invitationId) return NextResponse.json({ error: "invitationId wajib diisi." }, { status: 400 });
 
   try {
-    if (!findInvitation(invitationId)) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
+    if (!(await findInvitation(invitationId))) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
 
     const filters: SQL[] = [eq(guests.invitationId, invitationId)];
     if (query) {
@@ -45,7 +45,7 @@ export function GET(request: NextRequest) {
     }
     if (groupName) filters.push(eq(guests.groupName, groupName));
 
-    const rows = db.select().from(guests).where(and(...filters)).orderBy(asc(guests.name)).all();
+    const rows = await db.select().from(guests).where(and(...filters)).orderBy(asc(guests.name)).all();
     return NextResponse.json({ data: rows.map((guest: Guest) => serializeGuest(guest)), count: rows.length });
   } catch (error) {
     console.error("Failed to list guests", error);
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   if (phone.value && phone.value.length > 40) return NextResponse.json({ error: "phone maksimal 40 karakter." }, { status: 400 });
 
   try {
-    if (!findInvitation(invitationId.value!)) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
+    if (!(await findInvitation(invitationId.value!))) return NextResponse.json({ error: "Undangan tidak ditemukan." }, { status: 404 });
     const values: NewGuest = {
       id: randomUUID(),
       invitationId: invitationId.value!,
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       groupName: groupName.value!,
       notes: notes.value!,
     };
-    const created = db.insert(guests).values(values).returning().get();
+    const created = await db.insert(guests).values(values).returning().get();
     return NextResponse.json({ data: serializeGuest(created) }, { status: 201 });
   } catch (error) {
     console.error("Failed to create guest", error);

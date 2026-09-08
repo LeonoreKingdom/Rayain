@@ -4,6 +4,7 @@
   ".gitattributes": {"summary": "Konfigurasi atribut Git untuk normalisasi dan perlakuan file di repository Rayain."},
   ".gitignore": {"summary": "Daftar file lokal dan hasil build yang tidak boleh masuk version control pada aplikasi Next.js Rayain."},
   ".ngodingpakeaiignore": {"summary": "Pengecualian file untuk pemindaian NgodingPakeAI agar metadata sensitif, hasil build, dan artefak lokal tidak diindeks."},
+  ".vercelignore": {"summary": "Aturan deployment Vercel yang mengecualikan artefak lokal, dependency, data database lokal, file environment, dan metadata agent dari bundle produksi."},
   "AGENTS.md": {"summary": "Instruksi operasional repository yang mengatur gaya kerja agent, validasi, keamanan, koneksi NgodingPakeAI, dan batasan perubahan."},
   "app/admin/page.tsx": {"summary": "Halaman panel admin client-side untuk ringkasan, pengguna, template, musik, dan placeholder modul lain; menyediakan gate akses, pencarian, filter, preview, serta interaksi status berbasis data demo."},
   "app/api/admin/music/route.ts": {"summary": "Route admin musik: GET memfilter seluruh pustaka berdasarkan query, mood, dan status aktif; POST memvalidasi lalu membuat track dengan metadata audio dan status."},
